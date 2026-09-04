@@ -1,0 +1,16 @@
+cython
+scipy
+timm
+h5py
+submitit
+scikit-image==0.19.3
+opencv-python==4.8.0.76
+pycocotools
+numpy==1.23.1
+pyyaml
+tqdm
+Pillow==9.5.0
+imantics
+rich
+einops
+torchmetrics

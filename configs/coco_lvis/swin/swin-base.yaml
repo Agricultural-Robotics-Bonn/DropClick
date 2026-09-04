@@ -1,0 +1,100 @@
+# Adapted by Patrick Zimmer from https://github.com/amitrana001/DynaMITe
+
+MODEL:
+  BACKBONE:
+    NAME: "D2SwinTransformer"
+  SWIN:
+    EMBED_DIM: 192
+    DEPTHS: [2, 2, 18, 2]
+    NUM_HEADS: [6, 12, 24, 48]
+    WINDOW_SIZE: 12
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    PRETRAIN_IMG_SIZE: 384
+  WEIGHTS: "weights/swin_large_patch4_window12_384_22k.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  META_ARCHITECTURE: "DropClickModel"
+  SEM_SEG_HEAD:
+    NAME: "DropClickHead"
+    IGNORE_VALUE: 255
+    NUM_CLASSES: 80
+    LOSS_WEIGHT: 1.0
+    CONVS_DIM: 256
+    MASK_DIM: 256
+    NORM: "GN"
+    # pixel decoder
+    PIXEL_DECODER_NAME: "MSDeformAttnPixelDecoder"
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+    DEFORMABLE_TRANSFORMER_ENCODER_IN_FEATURES: ["res3", "res4", "res5"]
+    COMMON_STRIDE: 4
+    TRANSFORMER_ENC_LAYERS: 6
+    REFINE_MASK_FEATURES: True
+  MASK_FORMER:
+    INTERACTIVE_TRANSFORMER_NAME: "DropClickTransformer"
+    TRANSFORMER_IN_FEATURE: "multi_scale_pixel_decoder"
+    DEEP_SUPERVISION: True
+    CLASS_WEIGHT: 10.0
+    MASK_WEIGHT: 5.0
+    DICE_WEIGHT: 5.0
+    HIDDEN_DIM: 256
+    NHEADS: 8
+    DROPOUT: 0.0
+    DIM_FEEDFORWARD: 2048
+    PRE_NORM: False
+    ENFORCE_INPUT_PROJ: False
+    SIZE_DIVISIBILITY: 32
+    ENC_LAYERS: 10  # 9 encoder layers, add one for the loss on learnable query
+    TRAIN_NUM_POINTS: 12544
+    OVERSAMPLE_RATIO: 3.0
+    IMPORTANCE_SAMPLE_RATIO: 0.75
+    DECODER:
+      USE_DECODER: True
+      DEC_LAYERS: 5
+      DEC_SCALE_FACTOR: 1.0
+SOLVER:
+  IMS_PER_BATCH: 8
+  BASE_LR: 0.00005
+  WARMUP_FACTOR: 1.0
+  WARMUP_ITERS: 10
+  WEIGHT_DECAY: 0.05
+  OPTIMIZER: "ADAMW"
+  BACKBONE_MULTIPLIER: 0.1
+  CHECKPOINT_PERIOD: 9999999
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "full_model"
+    CLIP_VALUE: 0.01
+    NORM_TYPE: 2.0
+  AMP:
+    ENABLED: True
+DATASETS:
+  TRAIN: ("coco_lvis_2017_train",)
+  TEST: ()
+INPUT:
+  IMAGE_SIZE: 1024
+  MIN_AREA_FOR_MASK: 400.0
+  DISTRACTOR_BG: False
+  DISTRACTOR_OBJECTS: False
+  MIN_SCALE: 0.1
+  MAX_SCALE: 2.0
+  FORMAT: "RGB"
+  DATASET_MAPPER_NAME: "coco_lvis_oneclick"
+TEST:
+  EVAL_PERIOD: 9999999
+DATALOADER:
+  FILTER_EMPTY_ANNOTATIONS: True
+  NUM_WORKERS: 8
+ITERATIVE:
+  TRAIN:
+    POSITIONAL_EMBED: "spatio_temporal" #[ "temporal", "spatial", "spatio_temporal", None]
+    USE_STATIC_BG_QUERIES: True
+    NUM_STATIC_BG_QUERIES: 9
+    NUM_STATIC_FG_QUERIES: 100
+    STUFF_PROB: 0.15
+  TEST:
+    INTERACTIVE_EVALAUTION: True
+
+VERSION: 2
+
